@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>canvasPOO — docs</title>
+<link rel="icon" href="./icono.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #050810;
+    --surface: #0c0f1a;
+    --border:  #1a1e2e;
+    --accent:  #4db8ff;
+    --text:    #ffffff;
+    --muted:   #4a5270;
+    --sidebar: 240px;
+    --code-bg: #070a12;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: var(--sidebar);
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top:0; left:0;
+    display: flex;
+    flex-direction: column;
+    z-index: 200;
+    transition: transform 0.28s ease;
+    overflow-y: auto;
+  }
+  #sidebar.hidden { transform: translateX(calc(-1 * var(--sidebar))); }
+
+  .logo {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo img { width: 102px; height: 32px; border-radius: 6px; }
+  .logo small { font-size: 10px; color: var(--muted); }
+
+  .nav { padding: 8px 0; flex:1; }
+
+  .nav-link {
+    display: block;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .nav-link:hover { color: #fff; }
+  .nav-link.active { color: var(--accent); border-left-color: var(--accent); }
+
+  .nav-section {
+    padding: 12px 16px 4px;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+  }
+
+  details > summary {
+    list-style: none;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: color 0.15s;
+    border-left: 2px solid transparent;
+  }
+  details > summary::-webkit-details-marker { display:none; }
+  details > summary:hover { color: #fff; }
+  details[open] > summary { color: var(--accent); border-left-color: var(--accent); }
+  details > summary::after { content:'›'; transition: transform 0.2s; }
+  details[open] > summary::after { transform: rotate(90deg); }
+  .nav-sub .nav-link { padding-left: 28px; font-size: 11px; }
+
+  /* ── TOGGLE BTN ── */
+  #tog {
+    position: fixed;
+    top: 13px; left: 13px;
+    z-index: 300;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 34px; height: 34px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.2s, left 0.28s ease;
+  }
+  #tog:hover { color: var(--accent); }
+  body.sb-open #tog { left: calc(var(--sidebar) + 10px); }
+
+  /* ── MAIN ── */
+  #main {
+    flex: 1;
+    margin-left: var(--sidebar);
+    padding: 56px 32px 80px;
+    max-width: 860px;
+    width: 100%;
+    transition: margin-left 0.28s ease;
+  }
+  body:not(.sb-open) #main { margin-left: 0; }
+
+  /* ── PAGES ── */
+  .page { display:none; }
+  .page.active { display:block; }
+
+  /* ── HOME ── */
+  .hero { margin-bottom: 48px; padding-top: 4px; }
+  .hero-logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .hero-logo img { width: 56px; height: 56px; border-radius: 12px; }
+  .hero-logo h1 { font-size: clamp(32px, 7vw, 56px); font-weight: 700; letter-spacing: -1px; line-height: 1; }
+  .hero-logo h1 .w { color: #fff; }
+  .hero-logo h1 .b { color: var(--accent); }
+  .hero p { font-size: 13px; color: var(--muted); line-height: 1.8; max-width: 460px; }
+
+  .install {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 11px;
+    color: var(--accent);
+    margin: 28px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    overflow-x: auto;
+  }
+  .install code { white-space: nowrap; }
+  .install button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .install button:hover { color: var(--accent); border-color: var(--accent); }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 32px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 16px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-icon { font-size: 22px; margin-bottom: 8px; }
+  .card h3 { font-size: 12px; font-weight: 700; margin-bottom: 5px; color: #fff; }
+  .card p  { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+  .about {
+    margin-top: 48px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+  }
+  .about h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .about p  { font-size: 11px; color: var(--muted); line-height: 1.7; }
+  .about a  { color: var(--accent); text-decoration: none; }
+  .about a:hover { text-decoration: underline; }
+
+  /* ── API PAGE ── */
+  .page-title    { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .page-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 32px; }
+
+  .fn-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .fn-head {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    gap: 10px;
+  }
+  .fn-head:hover .fn-name { color: #fff; }
+  .fn-name { font-size: 13px; color: var(--accent); font-weight: 700; }
+  .fn-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: #4db8ff15;
+    color: var(--accent);
+    border: 1px solid #4db8ff30;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .fn-tag.obj { background: #ff6b9d15; color: #ff6b9d; border-color: #ff6b9d30; }
+  .fn-body { display:none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+  .fn-body.open { display:block; }
+  .fn-desc { font-size: 12px; color: #8899bb; line-height: 1.7; margin: 12px 0 10px; }
+
+  pre {
+    border: 1px solid var(--border);
+    border-radius: 6px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 11px !important;
+    line-height: 1.7 !important;
+    overflow-x: auto;
+    margin: 0 !important;
+    padding: 12px 14px !important;
+  }
+  pre code.hljs {
+    border-radius: 6px;
+    font-size: 11px;
+    padding: 12px 14px;
+    background: var(--code-bg) !important;
+  }
+
+  table { width:100%; border-collapse:collapse; font-size:11px; margin-top:10px; }
+  th { text-align:left; padding:5px 8px; color:var(--muted); border-bottom:1px solid var(--border); }
+  td { padding:5px 8px; border-bottom:1px solid #0d1020; color:#8899bb; vertical-align:top; }
+  td:first-child { color: var(--accent); }
+  td:nth-child(2) { color: #7eb8ff; }
+
+  .props { display:flex; flex-wrap:wrap; gap:5px; margin-top:10px; }
+  .prop {
+    font-size:10px; padding:2px 7px; border-radius:3px;
+    background:#0d1020; border:1px solid var(--border); color:#8899bb;
+  }
+  .prop span { color:#7eb8ff; }
+
+  /* ── TUTORIALS ── */
+  .tut-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .tut-card:hover { border-color: var(--accent); }
+  .tut-head {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .tut-num {
+    font-size: 11px; color: var(--muted);
+    background: #0d1020; border: 1px solid var(--border);
+    width:26px; height:26px; border-radius:5px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .tut-head h3 { font-size: 13px; font-weight:700; margin-bottom:2px; }
+  .tut-head p  { font-size: 11px; color: var(--muted); }
+  .tut-body { display:none; padding:0 16px 16px; border-top:1px solid var(--border); }
+  .tut-body.open { display:block; }
+  .step { margin-top:18px; padding-left:12px; border-left:2px solid var(--border); }
+  .step:hover { border-left-color: var(--accent); }
+  .step-n { font-size:10px; color:var(--accent); margin-bottom:3px; }
+  .step h4 { font-size:12px; font-weight:700; margin-bottom:5px; }
+  .step p  { font-size:11px; color:#6677aa; line-height:1.7; margin-bottom:8px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    #main { padding: 56px 16px 60px; }
+    .hero-logo img { width: 44px; height: 54px; }
+    .hero-logo h1 { font-size: 32px; }
+    .install { font-size: 10px; }
+    .fn-name { font-size: 11px; }
+    pre { font-size: 10px; }
+    body.sb-open #main { margin-left: 0; }
+  }
+
+  /* overlay móvil */
+  #overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 150;
+  }
+  body.sb-open #overlay { display: block; }
+  @media (min-width: 641px) { #overlay { display: none !important; } }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body class="sb-open">
+
+<div id="overlay" onclick="toggleSB()"></div>
+<button id="tog" onclick="toggleSB()">☰</button>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="logo">
+    <img src="./icono.png" alt="canvasPOO icon">
+    <small>v1.2.0 — docs</small>
+  </div>
+  <div class="nav">
+    <a class="nav-link active" onclick="show('home',this)"> Home</a>
+    <div class="nav-section">Referencia</div>
+    <details open>
+      <summary>canvasPOO</summary>
+      <div class="nav-sub">
+        <a class="nav-link" onclick="show('api',this);go('circle')">circle()</a>
+        <a class="nav-link" onclick="show('api',this);go('strokeCircle')">strokeCircle()</a>
+        <a class="nav-link" onclick="show('api',this);go('roundRect')">roundRect()</a>
+        <a class="nav-link" onclick="show('api',this);go('line')">line()</a>
+        <a class="nav-link" onclick="show('api',this);go('polygon')">polygon()</a>
+        <a class="nav-link" onclick="show('api',this);go('background')">background()</a>
+        <a class="nav-link" onclick="show('api',this);go('clear')">clear()</a>
+        <a class="nav-link" onclick="show('api',this);go('print')">print()</a>
+        <a class="nav-link" onclick="show('api',this);go('withAlpha')">withAlpha()</a>
+        <a class="nav-link" onclick="show('api',this);go('linearGradient')">linearGradient()</a>
+        <a class="nav-link" onclick="show('api',this);go('radialGradient')">radialGradient()</a>
+        <a class="nav-link" onclick="show('api',this);go('loop')">loop()</a>
+        <a class="nav-link" onclick="show('api',this);go('camera')">Camera()</a>
+        <a class="nav-link" onclick="show('api',this);go('scene')">Scene()</a>
+        <a class="nav-link" onclick="show('api',this);go('particles')">ParticleGenerator()</a>
+        <a class="nav-link" onclick="show('api',this);go('tween')">tween()</a>
+        <a class="nav-link" onclick="show('api',this);go('shake')">shake()</a>
+        <a class="nav-link" onclick="show('api',this);go('gravity')">gravity() / friction()</a>
+        <a class="nav-link" onclick="show('api',this);go('math')">math utils</a>
+        <a class="nav-link" onclick="show('api',this);go('arrow')">arrow() / grid()</a>
+        <a class="nav-link" onclick="show('api',this);go('loadAll')">loadAll()</a>
+        <a class="nav-link" onclick="show('api',this);go('loop')">loop()</a>
+        <a class="nav-link" onclick="show('api',this);go('camera')">Camera()</a>
+        <a class="nav-link" onclick="show('api',this);go('scene')">Scene()</a>
+        <a class="nav-link" onclick="show('api',this);go('particles')">ParticleGenerator()</a>
+        <a class="nav-link" onclick="show('api',this);go('tween')">tween()</a>
+        <a class="nav-link" onclick="show('api',this);go('shake')">shake()</a>
+        <a class="nav-link" onclick="show('api',this);go('gravity')">gravity() / friction()</a>
+        <a class="nav-link" onclick="show('api',this);go('math')">math utils</a>
+        <a class="nav-link" onclick="show('api',this);go('arrow')">arrow() / grid()</a>
+        <a class="nav-link" onclick="show('api',this);go('loadAll')">loadAll()</a>
+        <a class="nav-link" onclick="show('api',this);go('Rect')">Rect()</a>
+        <a class="nav-link" onclick="show('api',this);go('Circle')">Circle()</a>
+        <a class="nav-link" onclick="show('api',this);go('Polygon')">Polygon()</a>
+        <a class="nav-link" onclick="show('api',this);go('Sprite')">Sprite()</a>
+        <a class="nav-link" onclick="show('api',this);go('Text')">Text()</a>
+        <a class="nav-link" onclick="show('api',this);go('collidesSprite')">collidesSprite()</a>
+        <a class="nav-link" onclick="show('api',this);go('collidesRect')">collidesRect()</a>
+        <a class="nav-link" onclick="show('api',this);go('collidesCircle')">collidesCircle()</a>
+        <a class="nav-link" onclick="show('api',this);go('collidesCircleRect')">collidesCircleRect()</a>
+        <a class="nav-link" onclick="show('api',this);go('pointInRect')">pointInRect()</a>
+        <a class="nav-link" onclick="show('api',this);go('pointInCircle')">pointInCircle()</a>
+        <a class="nav-link" onclick="show('api',this);go('loop')">loop()</a>
+        <a class="nav-link" onclick="show('api',this);go('camera')">Camera()</a>
+        <a class="nav-link" onclick="show('api',this);go('scene')">Scene()</a>
+        <a class="nav-link" onclick="show('api',this);go('particles')">ParticleGenerator()</a>
+        <a class="nav-link" onclick="show('api',this);go('tween')">tween()</a>
+        <a class="nav-link" onclick="show('api',this);go('shake')">shake()</a>
+        <a class="nav-link" onclick="show('api',this);go('gravity')">gravity() / friction()</a>
+        <a class="nav-link" onclick="show('api',this);go('math')">math utils</a>
+        <a class="nav-link" onclick="show('api',this);go('arrow')">arrow() / grid()</a>
+        <a class="nav-link" onclick="show('api',this);go('loadAll')">loadAll()</a>
+      </div>
+    </details>
+    <div class="nav-section">Aprender</div>
+    <details>
+      <summary>Tutoriales</summary>
+      <div class="nav-sub">
+        <a class="nav-link" onclick="show('tuts',this);go('t1')">Setup básico</a>
+        <a class="nav-link" onclick="show('tuts',this);go('t2')">Snake</a>
+        <a class="nav-link" onclick="show('tuts',this);go('t3')">Partículas</a>
+        <a class="nav-link" onclick="show('tuts',this);go('t4')">Flappy Bird</a>
+      </div>
+    </details>
+  </div>
+</nav>
+
+<main id="main">
+
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <div class="hero">
+      <img src="./icono.png" alt="canvasPOO" style="width:340px;height:80px;border-radius:20px;display:block;margin-bottom:24px;">
+      <p>Estaba Usando la Api de Canvas y me di cuenta de que con el tiempo se volvia tediosa y busque librerias que me ayudaran pero ninguna solucionaba lo que queria asi que hice canvasPOO que básicamente en canvas pero con POO,y slgunas funciones mas :)</p>
+    </div>
+    
+  
+
+    <div class="install">
+      <code>&lt;script src="https://unpkg.com/canvas-poo@1.2.0/canvasPOO.js"&gt;&lt;/script&gt;</code>
+      <button onclick="cp(this)">copiar</button>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="card-icon"></div><h3>Objetos POO</h3><p>Rect, Circle, Sprite y Text con position, scale y rotation.</p></div>
+      <div class="card"><div class="card-icon"></div><h3>Helpers</h3><p>background, print, withAlpha, gradientes en una línea.</p></div>
+    </div>
+
+    <div class="about">
+      <div class="avatar">S</div>
+      <div>
+        <h3>spacesxd</h3>
+        <p>Creador de canvasPOO.<br>
+        <a href="https://www.npmjs.com/package/canvas-poo" target="_blank">npm</a> ·
+        <a href="https://unpkg.com/canvas-poo@1.2.0/canvasPOO.js" target="_blank">source</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- API -->
+  <div class="page" id="page-api">
+    <div class="page-title">API</div>
+    <div class="page-subtitle">Métodos que canvasPOO agrega al ctx.</div>
+
+    <div class="fn-card" id="fn-circle"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.circle(x, y, r)</span><span class="fn-tag">forma</span></div><div class="fn-body"><p class="fn-desc">Círculo relleno. Usa el fillStyle actual.</p><table><tr><th>param</th><th>tipo</th><th>desc</th></tr><tr><td>x</td><td>number</td><td>Centro X</td></tr><tr><td>y</td><td>number</td><td>Centro Y</td></tr><tr><td>r</td><td>number</td><td>Radio</td></tr></table><pre><code class="language-js">ctx.fillStyle = 'red'
+ctx.circle(200, 200, 40)</code></pre></div></div>
+
+    <div class="fn-card" id="fn-strokeCircle"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.strokeCircle(x, y, r)</span><span class="fn-tag">forma</span></div><div class="fn-body"><p class="fn-desc">Borde de círculo. Usa strokeStyle y lineWidth actuales.</p><pre><code class="language-js">ctx.strokeStyle = 'cyan'
+ctx.lineWidth = 2
+ctx.strokeCircle(100, 100, 30)</code></pre></div></div>
+
+    <div class="fn-card" id="fn-roundRect"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.roundRect(x, y, w, h, r?)</span><span class="fn-tag">forma</span></div><div class="fn-body"><p class="fn-desc">Rectángulo con esquinas redondeadas. r default: 8.</p><pre><code class="language-js">ctx.fillStyle = '#4db8ff'
+ctx.roundRect(50, 50, 120, 60, 12)</code></pre></div></div>
+
+    <div class="fn-card" id="fn-line"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.line(x1, y1, x2, y2)</span><span class="fn-tag">forma</span></div><div class="fn-body"><p class="fn-desc">Línea directa entre dos puntos.</p><pre><code class="language-js">ctx.strokeStyle = 'white'
+ctx.line(0, 0, 400, 300)</code></pre></div></div>
+
+    <div class="fn-card" id="fn-polygon"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.polygon(points)</span><span class="fn-tag">forma</span></div><div class="fn-body"><p class="fn-desc">Polígono cerrado desde array de [x,y].</p><pre><code class="language-js">ctx.fillStyle = 'lime'
+ctx.polygon([[200,50],[280,200],[120,200]])</code></pre></div></div>
+
+    <div class="fn-card" id="fn-background"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.background(color)</span><span class="fn-tag">utilidad</span></div><div class="fn-body"><p class="fn-desc">Rellena todo el canvas. Úsalo al inicio de cada frame.</p><pre><code class="language-js">ctx.background('#111')</code></pre></div></div>
+
+    <div class="fn-card" id="fn-clear"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.clear()</span><span class="fn-tag">utilidad</span></div><div class="fn-body"><p class="fn-desc">Borra todo el canvas dejándolo transparente.</p><pre><code class="language-js">ctx.clear()</code></pre></div></div>
+
+    <div class="fn-card" id="fn-print"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.print(text, x, y, opts?)</span><span class="fn-tag obj">objeto</span></div><div class="fn-body"><p class="fn-desc">Crea un objeto de texto con <code>draw()</code> y <code>setFont()</code>. Soporta fuentes del sistema o de URL.</p><table><tr><th>opción</th><th>default</th><th>desc</th></tr><tr><td>size</td><td>16</td><td>Tamaño px</td></tr><tr><td>family</td><td>'sans-serif'</td><td>Fuente</td></tr><tr><td>color</td><td>'#fff'</td><td>Color</td></tr><tr><td>align</td><td>'left'</td><td>left/center/right</td></tr><tr><td>baseline</td><td>'top'</td><td>top/middle/bottom</td></tr><tr><td>bold</td><td>false</td><td>Negrita</td></tr></table><div class="props"><span class="prop">position.<span>x/y</span></span><span class="prop">text</span><span class="prop">size</span><span class="prop">color</span><span class="prop">bold</span><span class="prop">align</span><span class="prop">draw()</span><span class="prop">setFont()</span></div><pre><code class="language-js">const label = ctx.print('hola', 20, 20, { size:24, color:'#4db8ff', bold:true })
+label.text = 'nuevo texto'
+label.draw()
+
+// cargar fuente de URL:
+await label.setFont('https://fonts.gstatic.com/s/font.ttf', 'MiFuente')
+label.draw()
+
+// fuente del sistema:
+await label.setFont('monospace')</code></pre></div></div>
+
+    <div class="fn-card" id="fn-withAlpha"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.withAlpha(a, fn)</span><span class="fn-tag">utilidad</span></div><div class="fn-body"><p class="fn-desc">Ejecuta fn con globalAlpha temporal. Ahorra save/restore manual.</p><pre><code class="language-js">ctx.withAlpha(0.3, () => {
+  ctx.circle(200, 200, 60)
+})</code></pre></div></div>
+
+    <div class="fn-card" id="fn-linearGradient"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.linearGradient(x1,y1,x2,y2, stops)</span><span class="fn-tag">utilidad</span></div><div class="fn-body"><p class="fn-desc">Gradiente lineal listo para asignar a fillStyle. stops: [[pos, color], ...]</p><pre><code class="language-js">ctx.fillStyle = ctx.linearGradient(
+  0,0, 0,400,
+  [[0,'#4db8ff'],[1,'#ff6b9d']]
+)</code></pre></div></div>
+
+    <div class="fn-card" id="fn-radialGradient"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.radialGradient(x,y,r1,r2, stops)</span><span class="fn-tag">utilidad</span></div><div class="fn-body"><p class="fn-desc">Gradiente radial desde r1 hasta r2 centrado en (x, y).</p><pre><code class="language-js">ctx.fillStyle = ctx.radialGradient(
+  200,200, 0,100,
+  [[0,'white'],[1,'transparent']]
+)</code></pre></div></div>
+
+    <div class="fn-card" id="fn-Rect"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.Rect(x, y, w, h, color?)</span><span class="fn-tag obj">objeto</span></div><div class="fn-body"><p class="fn-desc">Rectángulo como objeto. Pivote en el centro para rotate/scale.</p><div class="props"><span class="prop">position.<span>x/y</span></span><span class="prop">size.<span>w/h</span></span><span class="prop">scale.<span>x/y</span></span><span class="prop">rotation</span><span class="prop">alpha</span><span class="prop">visible</span><span class="prop">color</span><span class="prop">draw()</span></div><pre><code class="language-js">const p = ctx.Rect(100,100,40,40,'red')
+p.position.x += 5
+p.rotation = 0.3
+p.scale.x = 2
+p.draw()</code></pre></div></div>
+
+    <div class="fn-card" id="fn-Circle"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.Circle(x, y, r, color?)</span><span class="fn-tag obj">objeto</span></div><div class="fn-body"><p class="fn-desc">Círculo como objeto.</p><div class="props"><span class="prop">position.<span>x/y</span></span><span class="prop">radius</span><span class="prop">scale.<span>x/y</span></span><span class="prop">alpha</span><span class="prop">visible</span><span class="prop">color</span><span class="prop">draw()</span></div><pre><code class="language-js">const b = ctx.Circle(200,200,20,'cyan')
+b.position.y += 3
+b.radius = 30
+b.draw()</code></pre></div></div>
+
+    <div class="fn-card" id="fn-Polygon"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.Polygon(points, color?)</span><span class="fn-tag obj">objeto</span></div><div class="fn-body"><p class="fn-desc">Polígono como objeto con posición, rotación y escala.</p><div class="props"><span class="prop">position.<span>x/y</span></span><span class="prop">points</span><span class="prop">scale.<span>x/y</span></span><span class="prop">rotation</span><span class="prop">alpha</span><span class="prop">visible</span><span class="prop">draw()</span></div><pre><code class="language-js">const t = ctx.Polygon([[0,-20],[20,20],[-20,20]],'lime')
+t.position.x = 300
+t.rotation += 0.01
+t.draw()</code></pre></div></div>
+
+    <div class="fn-card" id="fn-Sprite"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.Sprite(x, y, w, h, src)</span><span class="fn-tag obj">objeto</span></div><div class="fn-body"><p class="fn-desc">Imagen como objeto. Acepta una ruta string o un HTMLImageElement. Incluye <code>radius</code> automático para colisiones.</p><div class="props"><span class="prop">position.<span>x/y</span></span><span class="prop">size.<span>w/h</span></span><span class="prop">scale.<span>x/y</span></span><span class="prop">rotation</span><span class="prop">alpha</span><span class="prop">visible</span><span class="prop">radius</span><span class="prop">draw()</span></div><pre><code class="language-js">// con string — carga sola:
+const hero = ctx.Sprite(100, 100, 64, 64, 'hero.png')
+hero.position.x += 5
+hero.draw()
+
+// con HTMLImageElement:
+const s = ctx.Sprite(100, 100, 64, 64, miImagen)</code></pre></div></div>
+
+    <div class="fn-card" id="fn-Text"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.Text(x, y, text, opts?)</span><span class="fn-tag obj">objeto</span></div><div class="fn-body"><p class="fn-desc">Texto como objeto. Cambia .text en el loop sin recrear nada.</p><div class="props"><span class="prop">position.<span>x/y</span></span><span class="prop">text</span><span class="prop">size</span><span class="prop">color</span><span class="prop">bold</span><span class="prop">align</span><span class="prop">alpha</span><span class="prop">visible</span><span class="prop">draw()</span></div><pre><code class="language-js">const sc = ctx.Text(20,20,'0',{ size:24, bold:true })
+sc.text = `${puntos}`
+sc.draw()</code></pre></div></div>
+
+    <div class="fn-card" id="fn-collidesSprite"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.collidesSprite(a, b)</span><span class="fn-tag">colisión</span></div><div class="fn-body"><p class="fn-desc">Colisión entre dos Sprites (o cualquier objeto con size). Usa pivote central.</p><pre><code class="language-js">if (ctx.collidesSprite(player, enemy)) {
+  // colisión!
+}</code></pre></div></div>
+<div class="fn-card" id="fn-collidesRect"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.collidesRect(a, b)</span><span class="fn-tag">colisión</span></div><div class="fn-body"><p class="fn-desc">Colisión entre dos Rect. Los objetos usan su posición como centro.</p><pre><code class="language-js">if (ctx.collidesRect(caja1, caja2)) {
+  // colisión!
+}</code></pre></div></div>
+<div class="fn-card" id="fn-collidesCircle"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.collidesCircle(a, b)</span><span class="fn-tag">colisión</span></div><div class="fn-body"><p class="fn-desc">Colisión entre dos Circle.</p><pre><code class="language-js">if (ctx.collidesCircle(bola1, bola2)) {
+  // colisión!
+}</code></pre></div></div>
+<div class="fn-card" id="fn-collidesCircleRect"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.collidesCircleRect(c, r)</span><span class="fn-tag">colisión</span></div><div class="fn-body"><p class="fn-desc">Colisión entre un Circle y un Rect.</p><pre><code class="language-js">if (ctx.collidesCircleRect(bola, caja)) {
+  // colisión!
+}</code></pre></div></div>
+<div class="fn-card" id="fn-pointInRect"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.pointInRect(px, py, r)</span><span class="fn-tag">colisión</span></div><div class="fn-body"><p class="fn-desc">Devuelve true si el punto está dentro del Rect.</p><pre><code class="language-js">if (ctx.pointInRect(mouse.x, mouse.y, boton)) {
+  // hover!
+}</code></pre></div></div>
+<div class="fn-card" id="fn-pointInCircle"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.pointInCircle(px, py, c)</span><span class="fn-tag">colisión</span></div><div class="fn-body"><p class="fn-desc">Devuelve true si el punto está dentro del Circle.</p><pre><code class="language-js">if (ctx.pointInCircle(mouse.x, mouse.y, bola)) {
+  // dentro!
+}</code></pre></div></div>
+<div class="fn-card" id="fn-loop"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.loop(fn)</span><span class="fn-tag">loop</span></div><div class="fn-body"><p class="fn-desc">Arranca el game loop. fn recibe <code>dt</code> (segundos desde el último frame) y <code>time</code> (tiempo total). Devuelve una función para pararlo.</p><pre><code class="language-js">const caja = ctx.Rect(100,100,60,60,'#4db8ff')
+
+const stop = ctx.loop((dt, time) => {
+  ctx.background('#111')
+  caja.rotation += dt
+  caja.draw()
+})
+
+// para pararlo:
+stop()</code></pre></div></div>
+
+
+    <div class="fn-card" id="fn-camera"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.Camera(opts?)</span><span class="fn-tag obj">objeto</span></div><div class="fn-body"><p class="fn-desc">Crea una cámara. Asígnala a <code>ctx.camera</code> para activarla. Soporta follow, zoom y suavizado.</p><pre><code class="language-js">const cam = ctx.Camera({ zoom: 1.5, smoothing: 0.1 });
+cam.follow(player);
+ctx.camera = cam;
+
+ctx.loop((dt) => {
+  cam.update(dt);
+  player.draw();
+  cam.screen(() => { score.draw(); }); // UI fija
+});</code></pre></div></div>
+
+    <div class="fn-card" id="fn-scene"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.Scene()</span><span class="fn-tag obj">objeto</span></div><div class="fn-body"><p class="fn-desc">Contenedor opcional de objetos. Maneja update, draw y limpia los destruidos automáticamente.</p><pre><code class="language-js">const scene = ctx.Scene();
+scene.add(player, enemy, background);
+
+ctx.loop((dt) => {
+  ctx.background('#111');
+  scene.tick(dt); // update + draw
+});
+
+// buscar por tag
+scene.getByTag('enemy');</code></pre></div></div>
+
+    <div class="fn-card" id="fn-particles"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.ParticleGenerator(lifetime, size, src?, color?)</span><span class="fn-tag obj">objeto</span></div><div class="fn-body"><p class="fn-desc">Generador de partículas. Puede usar un sprite o color sólido. Las partículas heredan la física global.</p><table><tr><th>prop</th><th>desc</th></tr><tr><td>position.x/y</td><td>origen de emisión</td></tr><tr><td>speed</td><td>velocidad de las partículas</td></tr><tr><td>spread</td><td>ángulo de dispersión (radianes)</td></tr><tr><td>direction</td><td>dirección base (radianes)</td></tr><tr><td>gravity</td><td>sobreescribe gravedad global</td></tr><tr><td>count</td><td>partículas vivas (readonly)</td></tr></table><pre><code class="language-js">const fire = ctx.ParticleGenerator(1, 6, null, 'orange');
+fire.position.x = 200;
+fire.position.y = 300;
+fire.speed = 150;
+fire.spread = 0.5;
+fire.direction = -Math.PI / 2;
+
+ctx.loop((dt) => {
+  fire.emit(3);
+  fire.tick(dt); // update + draw
+});</code></pre></div></div>
+
+    <div class="fn-card" id="fn-tween"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.tween(obj, props, duration, easing?, onDone?)</span><span class="fn-tag">utilidad</span></div><div class="fn-body"><p class="fn-desc">Anima propiedades numéricas de cualquier objeto. El loop lo actualiza automático.</p><pre><code class="language-js">ctx.tween(player, { x: 400 }, 1.5);
+
+// con easing y callback:
+ctx.tween(enemy, { alpha: 0 }, 0.5, t => t * t, () => {
+  enemy.destroy();
+});</code></pre></div></div>
+
+    <div class="fn-card" id="fn-shake"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.shake(intensity, duration)</span><span class="fn-tag">utilidad</span></div><div class="fn-body"><p class="fn-desc">Sacude el canvas. Se integra solo en el loop.</p><pre><code class="language-js">ctx.shake(10, 0.3); // intensidad 10px, 0.3 segundos</code></pre></div></div>
+
+    <div class="fn-card" id="fn-gravity"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.gravity(v) / ctx.friction(v)</span><span class="fn-tag">física</span></div><div class="fn-body"><p class="fn-desc">Define gravedad y fricción globales. Todos los objetos con física las heredan, salvo que definan la suya.</p><pre><code class="language-js">ctx.gravity(500);
+ctx.friction(0.02);
+
+const ball = ctx.Circle(200, 0, 20, 'red');
+ball.enablePhysics(); // usa la global
+ball.bounce = true;   // rebota en bordes
+// ball.wrap = true;  // o aparece por el otro lado</code></pre></div></div>
+
+    <div class="fn-card" id="fn-math"><div class="fn-head" onclick="tf(this)"><span class="fn-name">math utils</span><span class="fn-tag">utilidad</span></div><div class="fn-body"><p class="fn-desc">Funciones matemáticas comunes para juegos.</p><pre><code class="language-js">ctx.rand(0, 100);          // float aleatorio
+ctx.randInt(1, 6);         // entero aleatorio
+ctx.lerp(a, b, 0.1);       // interpolación
+ctx.clamp(v, 0, 1);        // limitar valor
+ctx.map(v, 0, 100, 0, 1);  // mapear rango
+ctx.dist(x1, y1, x2, y2);  // distancia
+ctx.angle(x1, y1, x2, y2); // ángulo en radianes
+ctx.fps;                   // fps actual</code></pre></div></div>
+
+    <div class="fn-card" id="fn-arrow"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.arrow() / ctx.grid()</span><span class="fn-tag">debug</span></div><div class="fn-body"><p class="fn-desc">Utilidades de debug y ayuda visual.</p><pre><code class="language-js">ctx.arrow(0, 0, 100, 100, 'red', 12); // flecha direccional
+ctx.grid(32, '#ffffff11');             // grilla de fondo</code></pre></div></div>
+
+    <div class="fn-card" id="fn-loadAll"><div class="fn-head" onclick="tf(this)"><span class="fn-name">ctx.loadAll(assets)</span><span class="fn-tag">assets</span></div><div class="fn-body"><p class="fn-desc">Carga imágenes y sonidos de una sola vez. Devuelve una promesa con todos los assets listos.</p><pre><code class="language-js">const assets = await ctx.loadAll({
+  hero:  'hero.png',
+  bg:    'bg.png',
+  jump:  'jump.wav',
+  music: 'music.mp3',
+});
+
+assets.jump.play();
+const player = ctx.Sprite(100, 100, 64, 64, assets.hero);</code></pre></div></div>
+
+  </div>
+
+  <!-- TUTORIALS -->
+  <div class="page" id="page-tuts">
+    <div class="page-title">Tutoriales</div>
+    <div class="page-subtitle">Paso a paso para hacer cosas reales.</div>
+
+    <div class="tut-card" id="t1"><div class="tut-head" onclick="tt(this)"><div class="tut-num">01</div><div><h3>Setup básico</h3><p>Canvas, loop y tu primer objeto</p></div></div><div class="tut-body">
+      <div class="step"><div class="step-n">PASO 1</div><h4>Carga canvasPOO</h4><p>Pon el script antes de tu main.js.</p><pre><code class="language-js">&lt;script src="https://unpkg.com/canvas-poo@1.2.0/canvasPOO.js"&gt;&lt;/script&gt;
+&lt;script src="main.js"&gt;&lt;/script&gt;</code></pre></div>
+      <div class="step"><div class="step-n">PASO 2</div><h4>Envuelve el ctx</h4><pre><code class="language-js">const ctx = canvasPOO(canvas.getContext('2d'))</code></pre></div>
+      <div class="step"><div class="step-n">PASO 3</div><h4>Crea objetos y usa ctx.loop()</h4><pre><code class="language-js">const caja = ctx.Rect(100,100,60,60,'#4db8ff')
+
+ctx.loop((dt) => {
+  ctx.background('#050810')
+  caja.rotation += dt
+  caja.draw()
+})</code></pre></div>
+    </div></div>
+
+    <div class="tut-card" id="t2"><div class="tut-head" onclick="tt(this)"><div class="tut-num">02</div><div><h3>Snake</h3><p>Juego completo con Rect, Circle y Text</p></div></div><div class="tut-body">
+      <div class="step"><div class="step-n">PASO 1</div><h4>Estado</h4><pre><code class="language-js">const T=20, C=24
+let snake = [{x:12,y:12},{x:11,y:12}]
+let dir = {x:1,y:0}
+let food = {x:5,y:5}</code></pre></div>
+      <div class="step"><div class="step-n">PASO 2</div><h4>Objetos canvasPOO</h4><pre><code class="language-js">const foodObj = ctx.Circle(0,0,T/2-2,'#e74c3c')
+const score  = ctx.Text(W/2,14,'0',{ size:20, bold:true, align:'center' })</code></pre></div>
+      <div class="step"><div class="step-n">PASO 3</div><h4>Dibujar snake</h4><pre><code class="language-js">snake.forEach((s,i) => {
+  const r = ctx.Rect(s.x*T+1,s.y*T+1,T-2,T-2,
+    i===0?'#39ff14':'#27ae60')
+  r.draw()
+})</code></pre></div>
+      <div class="step"><div class="step-n">PASO 4</div><h4>Swipe táctil</h4><pre><code class="language-js">let t0 = null
+canvas.addEventListener('touchstart', e =>
+  t0 = {x:e.touches[0].clientX, y:e.touches[0].clientY})
+canvas.addEventListener('touchend', e => {
+  const dx=e.changedTouches[0].clientX-t0.x
+  const dy=e.changedTouches[0].clientY-t0.y
+  dir = Math.abs(dx)>Math.abs(dy)
+    ? (dx>0?{x:1,y:0}:{x:-1,y:0})
+    : (dy>0?{x:0,y:1}:{x:0,y:-1})
+})</code></pre></div>
+    </div></div>
+
+    <div class="tut-card" id="t3"><div class="tut-head" onclick="tt(this)"><div class="tut-num">03</div><div><h3>Partículas</h3><p>Explosiones con Circle, alpha y escala</p></div></div><div class="tut-body">
+      <div class="step"><div class="step-n">PASO 1</div><h4>Crear una partícula</h4><pre><code class="language-js">function spawn(x, y) {
+  const p = ctx.Circle(x, y, Math.random()*6+2, '#4db8ff')
+  p.vx = (Math.random()-.5)*200
+  p.vy = (Math.random()-.5)*200
+  p.vida = 1
+  return p
+}</code></pre></div>
+      <div class="step"><div class="step-n">PASO 2</div><h4>Update y draw en el loop</h4><pre><code class="language-js">parts = parts.filter(p => p.vida > 0)
+parts.forEach(p => {
+  p.vida -= dt
+  p.position.x += p.vx * dt
+  p.position.y += p.vy * dt
+  p.alpha = p.vida
+  p.draw()
+})</code></pre></div>
+      <div class="step"><div class="step-n">PASO 3</div><h4>Emitir al click</h4><pre><code class="language-js">canvas.addEventListener('click', e => {
+  const r = canvas.getBoundingClientRect()
+  for (let i=0;i<20;i++)
+    parts.push(spawn(e.clientX-r.left, e.clientY-r.top))
+})</code></pre></div>
+    </div></div>
+
+
+    <div class="tut-card" id="t4"><div class="tut-head" onclick="tt(this)"><div class="tut-num">04</div><div><h3>Flappy Bird</h3><p>Física, colisiones, contador y game over</p></div></div><div class="tut-body">
+      <div class="step"><div class="step-n">PASO 1</div><h4>Setup y física</h4><pre><code class="language-js">const canvas = document.getElementById('c');
+const ctx = canvasPOO(canvas.getContext('2d'));
+
+ctx.gravity(1200);
+
+const bird = ctx.Circle(120, 250, 18, '#f5c542');
+bird.enablePhysics();</code></pre></div>
+
+      <div class="step"><div class="step-n">PASO 2</div><h4>Salto con tap o espacio</h4><pre><code class="language-js">function jump() {
+  if (state !== 'playing') { init(); return; }
+  bird.velocity.y = -420;
+}
+
+window.addEventListener('keydown', e => { if (e.code === 'Space') jump(); });
+canvas.addEventListener('pointerdown', jump);</code></pre></div>
+
+      <div class="step"><div class="step-n">PASO 3</div><h4>Tubos</h4><pre><code class="language-js">const GAP = 160, PIPE_W = 52, SPEED = 180;
+let pipes = [];
+
+function spawnPipe() {
+  const top = ctx.randInt(60, canvas.height - GAP - 60);
+  pipes.push({
+    top:   ctx.Rect(canvas.width + PIPE_W/2, top/2,         PIPE_W, top,                '#4caf50'),
+    bot:   ctx.Rect(canvas.width + PIPE_W/2, top+GAP + (canvas.height-top-GAP)/2, PIPE_W, canvas.height-top-GAP, '#4caf50'),
+    passed: false,
+  });
+}
+
+function updatePipes(dt) {
+  for (const p of pipes) {
+    p.top.position.x -= SPEED * dt;
+    p.bot.position.x -= SPEED * dt;
+  }
+  pipes = pipes.filter(p => p.top.position.x > -PIPE_W);
+}</code></pre></div>
+
+      <div class="step"><div class="step-n">PASO 4</div><h4>Colisiones y contador</h4><pre><code class="language-js">let score = 0;
+const scoreText = ctx.print('0', canvas.width/2, 40, {
+  size: 48, bold: true, color: '#fff', align: 'center',
+});
+
+function checkCollisions() {
+  if (bird.position.y + bird.radius > canvas.height || bird.position.y - bird.radius < 0) {
+    state = 'dead';
+  }
+  for (const p of pipes) {
+    if (ctx.collidesCircleRect(bird, p.top) || ctx.collidesCircleRect(bird, p.bot)) {
+      state = 'dead';
+    }
+    if (!p.passed && p.top.position.x < bird.position.x) {
+      p.passed = true;
+      score++;
+      scoreText.text = String(score);
+    }
+  }
+}</code></pre></div>
+
+      <div class="step"><div class="step-n">PASO 5</div><h4>Loop principal</h4><pre><code class="language-js">let state = 'playing';
+let pipeTimer = 0;
+
+function init() {
+  bird.position.y = 250;
+  bird.velocity.y = 0;
+  pipes = [];
+  score = 0;
+  scoreText.text = '0';
+  state = 'playing';
+  pipeTimer = 0;
+}
+
+ctx.loop((dt) => {
+  ctx.background('#70c5ce');
+
+  if (state === 'playing') {
+    bird.update(dt);
+    pipeTimer += dt;
+    if (pipeTimer > 1.6) { spawnPipe(); pipeTimer = 0; }
+    updatePipes(dt);
+    checkCollisions();
+  }
+
+  for (const p of pipes) { p.top.draw(); p.bot.draw(); }
+  bird.draw();
+  scoreText.draw();
+
+  if (state === 'dead') {
+    ctx.withAlpha(0.5, () => ctx.background('#000'));
+    ctx.print('GAME OVER', canvas.width/2, canvas.height/2 - 20, {
+      size: 36, bold: true, color: '#fff', align: 'center',
+    }).draw();
+    ctx.print('toca para reiniciar', canvas.width/2, canvas.height/2 + 30, {
+      size: 16, color: '#ccc', align: 'center',
+    }).draw();
+  }
+});
+
+init();</code></pre></div>
+    </div></div>
+
+  </div>
+
+</main>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  function toggleSB() {
+    const sb = document.getElementById('sidebar')
+    sb.classList.toggle('hidden')
+    document.body.classList.toggle('sb-open')
+  }
+  function show(id, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+    document.getElementById('page-'+id).classList.add('active')
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'))
+    if (el) el.classList.add('active')
+    if (window.innerWidth < 641) toggleSB()
+  }
+  function go(id) {
+    setTimeout(() => {
+      const el = document.getElementById('fn-'+id) || document.getElementById(id)
+      if (!el) return
+      el.scrollIntoView({ behavior:'smooth', block:'start' })
+      const b = el.querySelector('.fn-body')
+      if (b) b.classList.add('open')
+    }, 60)
+  }
+  function tf(head) { head.nextElementSibling.classList.toggle('open') }
+  function tt(head) { head.nextElementSibling.classList.toggle('open') }
+  function cp(btn) {
+    navigator.clipboard.writeText('<script src="https://unpkg.com/canvas-poo@1.2.0/canvasPOO.js"><\/script>')
+      .then(() => { btn.textContent='✓'; setTimeout(()=>btn.textContent='copiar',2000) })
+  }
+  if (window.innerWidth < 641) {
+    document.getElementById('sidebar').classList.add('hidden')
+    document.body.classList.remove('sb-open')
+  }
+  hljs.highlightAll()
+</script>
+</body>
+</html>
